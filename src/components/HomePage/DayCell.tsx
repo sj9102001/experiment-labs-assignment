@@ -10,7 +10,6 @@ interface Event {
     description?: string; // Optional description of the event
 }
 
-// Props expected by the DayCell component
 interface DayCellProps {
     date: Date; // The specific date this cell represents
     events: Event[]; // Array of all events passed to the calendar

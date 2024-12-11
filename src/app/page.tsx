@@ -78,7 +78,7 @@ export default function Home() {
   return (
     <main className="p-4">
       {/* Calendar component to display the events */}
-      <Calendar events={events} onAddEvent={() => setIsAddEventOpen(true)} />
+      <Calendar events={events} setEvents={setEvents} onAddEvent={() => setIsAddEventOpen(true)} />
 
       {/* Add Event Modal component */}
       <AddEventModal

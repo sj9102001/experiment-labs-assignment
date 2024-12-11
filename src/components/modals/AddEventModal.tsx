@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 import { Button } from "../ui/button"; // UI button component
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog"; // UI dialog components
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "../ui/dialog"; // UI dialog components
 import { Input } from "../ui/input"; // UI input component
 import { Label } from "../ui/label"; // UI label component
 import { collection, addDoc } from "firebase/firestore"; // Firestore functions to interact with the database
@@ -32,6 +38,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({
 }) => {
     const [newEvent, setNewEvent] = useState<Partial<CalendarEvent>>({}); // State for holding the new event details
     const [user] = useAuthState(auth); // Current authenticated user
+    const [loading, setLoading] = useState(false); // State for button loading
 
     // Function to handle adding a new event
     const handleAddEvent = async () => {
@@ -47,6 +54,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({
         };
 
         try {
+            setLoading(true); // Set loading state to true
             // Add the event to the Firestore database under the authenticated user's events
             const eventRef = await addDoc(collection(db, "users", user.uid, "events"), event);
 
@@ -58,6 +66,8 @@ const AddEventModal: React.FC<AddEventModalProps> = ({
             setNewEvent({});
         } catch (error) {
             console.error("Error adding event:", error); // Log any errors that occur
+        } finally {
+            setLoading(false); // Reset loading state
         }
     };
 
@@ -74,7 +84,9 @@ const AddEventModal: React.FC<AddEventModalProps> = ({
                         <Input
                             id="title"
                             value={newEvent.title || ""}
-                            onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+                            onChange={(e) =>
+                                setNewEvent({ ...newEvent, title: e.target.value })
+                            }
                             className="col-span-3"
                         />
                     </div>
@@ -84,9 +96,16 @@ const AddEventModal: React.FC<AddEventModalProps> = ({
                         <Input
                             id="date"
                             type="date"
-                            value={newEvent.date ? newEvent.date.toISOString().split("T")[0] : ""}
+                            value={
+                                newEvent.date
+                                    ? newEvent.date.toISOString().split("T")[0]
+                                    : ""
+                            }
                             onChange={(e) =>
-                                setNewEvent({ ...newEvent, date: new Date(e.target.value) })
+                                setNewEvent({
+                                    ...newEvent,
+                                    date: new Date(e.target.value),
+                                })
                             }
                             className="col-span-3"
                         />
@@ -97,18 +116,23 @@ const AddEventModal: React.FC<AddEventModalProps> = ({
                         <Input
                             id="description"
                             value={newEvent.description || ""}
-                            onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+                            onChange={(e) =>
+                                setNewEvent({
+                                    ...newEvent,
+                                    description: e.target.value,
+                                })
+                            }
                             className="col-span-3"
                         />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="color">
-                            Color
-                        </Label>
+                        <Label htmlFor="color">Color</Label>
                         <select
                             id="color"
-                            value={newEvent.color || 'bg-blue-500'}
-                            onChange={(e) => setNewEvent({ ...newEvent, color: e.target.value })}
+                            value={newEvent.color || "bg-blue-500"}
+                            onChange={(e) =>
+                                setNewEvent({ ...newEvent, color: e.target.value })
+                            }
                             className="col-span-3"
                         >
                             <option value="bg-blue-500">Blue</option>
@@ -120,7 +144,9 @@ const AddEventModal: React.FC<AddEventModalProps> = ({
                 </div>
                 {/* Footer with the Add Event button */}
                 <DialogFooter>
-                    <Button onClick={handleAddEvent}>Add Event</Button>
+                    <Button onClick={handleAddEvent} disabled={loading}>
+                        {loading ? "Adding..." : "Add Event"}
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

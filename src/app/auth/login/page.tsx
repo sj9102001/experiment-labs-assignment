@@ -40,7 +40,17 @@ const LoginPage = () => {
     // Firebase authentication hooks
     const [signInWithEmailAndPassword, user, loading, error] = useSignInWithEmailAndPassword(auth);
     const [initialUser] = useAuthState(auth); // Check if a user is already logged in
-
+    // Display error messages using toast notifications
+    useEffect(() => {
+        if (error) {
+            const errorMessage = getErrorMessage(error); // Generate error message based on Firebase error codes
+            toast({
+                title: "Error",
+                description: errorMessage,
+                variant: "destructive", // Styling for error notifications
+            });
+        }
+    }, [error]);
     // Redirect to the home page if the user is already logged in
     useEffect(() => {
         if (initialUser) {
@@ -56,35 +66,22 @@ const LoginPage = () => {
     // Function to generate error messages based on Firebase error codes
     const getErrorMessage = (error: any) => {
         if (!error) return null; // Return null if there is no error
-        let errorMessage = "";
         switch (error.code) {
             case "auth/user-not-found":
-                errorMessage = "No user found with this email.";
-                break;
+                return "No user found with this email.";
             case "auth/invalid-credential":
-                errorMessage = "Invalid credentials. Please try again.";
-                break;
+                return "Invalid credentials. Please try again.";
             case "auth/too-many-requests":
-                errorMessage = "Too many login attempts. Please try again later.";
-                break;
+                return "Too many login attempts. Please try again later.";
             default:
-                errorMessage = "An error occurred. Please try again.";
-                break;
+                return "An error occurred. Please try again.";
         }
-        toast({
-            title: "Error",
-            description: errorMessage,
-            variant: "destructive", // Toast style for error messages
-        });
     };
 
     // Form submission handler
     const onSubmit = async (data: LoginFormValues) => {
         try {
             await signInWithEmailAndPassword(data.email, data.password); // Attempt to log in the user
-            if (!error) {
-                router.push("/"); // Navigate to the home page if successful
-            }
         } catch (e) {
             console.error(e); // Log any errors
         }
@@ -143,10 +140,6 @@ const LoginPage = () => {
                             </Button>
                         </div>
                     </form>
-                    {/* Display error message if login fails */}
-                    {error && (
-                        <p className="mt-4 text-sm text-red-500">{getErrorMessage(error)}</p>
-                    )}
                     {/* Link to the signup page */}
                     <div className="mt-4 text-center text-sm">
                         Don&apos;t have an account?{" "}

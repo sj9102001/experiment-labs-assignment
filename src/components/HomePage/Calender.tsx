@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState } from 'react';
 import { MonthView } from './MonthView'; // Component for displaying the calendar's monthly view
@@ -21,10 +22,11 @@ interface Event {
 interface CalendarProps {
     events: Event[]; // Array of events to display on the calendar
     onAddEvent: () => void; // Function to handle adding a new event
+    setEvents: any;
 }
 
 // Main Calendar component
-export const Calendar: React.FC<CalendarProps> = ({ events, onAddEvent }) => {
+export const Calendar: React.FC<CalendarProps> = ({ events, onAddEvent, setEvents }) => {
     // State to track the currently displayed month and year
     const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -105,6 +107,7 @@ export const Calendar: React.FC<CalendarProps> = ({ events, onAddEvent }) => {
             {/* Render the EventModal component */}
             <EventModal
                 isOpen={isModalOpen}
+                setEvents={setEvents} // Pass the setEvents function
                 onClose={() => setIsModalOpen(false)} // Close the modal
                 events={selectedEvents} // Pass events for the selected date
                 selectedEvent={selectedEvent} // Pass the selected event

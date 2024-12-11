@@ -1,101 +1,91 @@
-import Image from "next/image";
+"use client"; // Indicates this component is a client-side rendered component
+import { useState, useEffect } from "react";
+import { Calendar } from "../components/HomePage/Calender"; // Calendar component for displaying events
+import AddEventModal from "@/components/modals/AddEventModal"; // Modal for adding new events
+import { useAuthState } from "react-firebase-hooks/auth"; // Firebase hook to manage user authentication state
+import { auth, db } from "@/lib/firebase/config"; // Firebase authentication and Firestore configuration
+import { useRouter } from "next/navigation"; // Next.js hook for programmatic navigation
+import { collection, query, getDocs } from "firebase/firestore"; // Firestore functions for querying data
 
+// Interface defining the structure of a calendar event
+interface CalendarEvent {
+  id: string; // Unique identifier for the event
+  title: string; // Title of the event
+  date: Date; // Date of the event
+  color: string; // Color associated with the event
+  description?: string; // Optional description of the event
+}
+
+// Main `Home` component
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  // State to hold the list of events
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+  // State to manage the visibility of the "Add Event" modal
+  const [isAddEventOpen, setIsAddEventOpen] = useState(false);
+
+  // Get the currently authenticated user
+  const [user] = useAuthState(auth);
+
+  // Router instance for programmatic navigation
+  const router = useRouter();
+
+  // Effect to handle user authentication and fetch events from Firestore
+  useEffect(() => {
+    // Redirect to login page if the user is not authenticated
+    if (!user) {
+      router.push("/auth/login");
+      return;
+    }
+
+    // Function to fetch events for the authenticated user from Firestore
+    const fetchEvents = async () => {
+      try {
+        // Reference to the user's events collection in Firestore
+        const userEventsRef = collection(db, "users", user.uid, "events");
+
+        // Query the events collection and retrieve the documents
+        const eventDocs = await getDocs(query(userEventsRef));
+
+        // Map the fetched documents to the `CalendarEvent` structure
+        const fetchedEvents: CalendarEvent[] = eventDocs.docs.map((doc) => {
+          const data = doc.data(); // Get document data
+
+          return {
+            id: doc.id, // Use document ID as the event ID
+            title: data.title || "Untitled Event", // Default title if none is provided
+            date: data.date?.toDate() || new Date(), // Convert Firestore timestamp to JavaScript Date
+            color: data.color || "bg-blue-500", // Default color if none is provided
+            description: data.description || undefined, // Convert null descriptions to undefined
+          };
+        });
+
+        // Update the events state with the fetched events
+        setEvents(fetchedEvents);
+      } catch (error) {
+        console.error("Error fetching events:", error); // Log errors
+      }
+    };
+
+    fetchEvents(); // Call the fetch events function
+  }, [user, router]); // Dependency array ensures this runs when `user` or `router` changes
+
+  // Return null if user is not authenticated (temporary guard to avoid rendering issues)
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <main className="p-4">
+      {/* Calendar component to display the events */}
+      <Calendar events={events} onAddEvent={() => setIsAddEventOpen(true)} />
+
+      {/* Add Event Modal component */}
+      <AddEventModal
+        isAddEventOpen={isAddEventOpen} // Pass modal open state
+        setIsAddEventOpen={setIsAddEventOpen} // Function to toggle modal visibility
+        setEvents={setEvents} // Function to update the events state
+      />
+    </main>
   );
 }

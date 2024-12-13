@@ -16,9 +16,10 @@ import { Input } from "@/components/ui/input"; // UI input component
 import { Label } from "@/components/ui/label"; // UI label component
 
 import { useAuthState, useCreateUserWithEmailAndPassword } from "react-firebase-hooks/auth"; // Firebase hooks for authentication
-import { auth } from "@/lib/firebase/config"; // Firebase authentication configuration
+import { auth, db } from "@/lib/firebase/config"; // Firebase authentication configuration
 import { toast } from "@/hooks/use-toast"; // Custom toast hook for notifications
 import { useEffect } from "react"; // React hook for side effects
+import { doc, setDoc } from "firebase/firestore";
 
 // Interface for form inputs
 interface SignupFormInputs {
@@ -94,8 +95,15 @@ const SignupPage = () => {
         }
 
         try {
-            await createUserWithEmailAndPassword(email, password); // Create user with Firebase
-            if (!error) {
+            const userCredential = await createUserWithEmailAndPassword(email, password); // Create user with Firebase
+
+            if (!error && userCredential) {
+                const userId = userCredential.user.uid; // Get the user's unique ID from Firebase Auth
+                // Add the user's email to the Firestore users collection
+                await setDoc(doc(db, "users", userId), {
+                    email: email, // Store the user's email
+                    createdAt: new Date(), // Optional: Add timestamp
+                });
                 toast({
                     title: "Success",
                     description: "Account created successfully. Redirecting to login...",

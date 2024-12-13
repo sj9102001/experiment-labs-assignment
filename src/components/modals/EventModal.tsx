@@ -6,7 +6,7 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/components/ui/dialog"; // UI dialog components
-import { formatDate } from "../../utils/dateUtils"; // Utility function to format dates
+import { formatDateAndTime } from "../../utils/dateUtils"; // Utility function to format dates
 import { doc, deleteDoc } from "firebase/firestore"; // Firestore functions for deleting a document
 import { auth, db } from "@/lib/firebase/config"; // Firestore configuration
 import { Button } from "@/components/ui/button"; // UI button component
@@ -81,7 +81,7 @@ export const EventModal: React.FC<EventModalProps> = ({
                         </h3>{" "}
                         {/* Event title */}
                         <p className="text-sm text-gray-500">
-                            {formatDate(selectedEvent.date)}
+                            {formatDateAndTime(selectedEvent.date)}
                         </p>{" "}
                         {/* Formatted event date */}
                         <p className="mt-2">
@@ -108,12 +108,15 @@ export const EventModal: React.FC<EventModalProps> = ({
                                 className="cursor-pointer p-2 rounded hover:bg-gray-100" // Styling and hover effect
                                 onClick={() => onEventClick(event)} // Handle event click
                             >
-                                <div className="flex items-center">
-                                    {/* Circle indicator with event color */}
-                                    <div
-                                        className={`w-3 h-3 rounded-full mr-2 ${event.color}`}
-                                    ></div>
-                                    <span>{event.title}</span>{" "}
+                                <div className="flex justify-between items-center">
+                                    <div className="flex items-center">
+                                        {/* Circle indicator with event color */}
+                                        <div
+                                            className={`w-3 h-3 rounded-full mr-2 ${event.color}`}
+                                        ></div>
+                                        <span>{event.title}</span>{" "}
+                                    </div>
+                                    <p>{formatDateAndTime(event.date).split("at")[1]}</p>
                                     {/* Event title */}
                                 </div>
                             </li>

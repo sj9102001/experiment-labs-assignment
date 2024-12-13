@@ -14,6 +14,7 @@ interface CalendarEvent {
   date: Date; // Date of the event
   color: string; // Color associated with the event
   description?: string; // Optional description of the event
+  calendarId: string;
 }
 
 // Main `Home` component
@@ -57,6 +58,7 @@ export default function Home() {
             date: data.date?.toDate() || new Date(), // Convert Firestore timestamp to JavaScript Date
             color: data.color || "bg-blue-500", // Default color if none is provided
             description: data.description || undefined, // Convert null descriptions to undefined
+            calendarId: data.calendarId
           };
         });
 

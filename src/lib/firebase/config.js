@@ -17,6 +17,8 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 const googleAuthProvider = new GoogleAuthProvider();
+googleAuthProvider.addScope("https://www.googleapis.com/auth/calendar");
+googleAuthProvider.addScope("https://www.googleapis.com/auth/calendar.events");
 googleAuthProvider.setCustomParameters({
     prompt: "select_account "
 });

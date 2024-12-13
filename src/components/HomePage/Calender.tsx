@@ -16,6 +16,7 @@ interface Event {
     date: Date;
     color: string;
     description?: string;
+    calendarId: string;
 }
 
 // Props expected by the Calendar component
@@ -67,6 +68,7 @@ export const Calendar: React.FC<CalendarProps> = ({ events, onAddEvent, setEvent
 
     // Function to handle user logout
     const logoutHandler = () => {
+        localStorage.removeItem("googleAccessToken");
         signOut(auth); // Sign out using Firebase authentication
     };
 

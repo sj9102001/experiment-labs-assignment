@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation"; // Next.js hook for programmatic na
 import { useAuthState, useSignInWithEmailAndPassword, useSignInWithGoogle } from "react-firebase-hooks/auth"; // Firebase hooks for managing authentication
 import { auth, db, googleAuthProvider } from "@/lib/firebase/config"; // Firebase authentication configuration and Google provider
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { GoogleAuthProvider } from "firebase/auth";
 
 // Interface for the login form values
 interface LoginFormValues {
@@ -94,8 +95,14 @@ const LoginPage = () => {
     // Google login handler
     const handleGoogleLogin = async () => {
         try {
-            const result = await signInWithPopup(); // Sign in with Google using a popup
+            const result = await signInWithPopup(["https://www.googleapis.com/auth/calendar", "https://www.googleapis.com/auth/calendar.events"]); // Sign in with Google using a popup
+
             if (result) {
+                const credential = GoogleAuthProvider.credentialFromResult(result);
+                const accessToken = credential?.accessToken;
+                if (accessToken) {
+                    localStorage.setItem("googleAccessToken", accessToken);
+                }
                 const userId = result.user.uid; // Get the user's unique ID from Firebase Auth
                 const userEmail = result.user.email; // Get the user's email
 

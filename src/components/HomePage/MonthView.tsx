@@ -9,6 +9,7 @@ interface Event {
     date: Date; // Date of the event
     color: string; // Color associated with the event
     description?: string; // Optional description of the event
+    calendarId: string;
 }
 
 // Props expected by the MonthView component

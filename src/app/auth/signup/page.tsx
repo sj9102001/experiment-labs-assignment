@@ -20,6 +20,7 @@ import { auth, db } from "@/lib/firebase/config"; // Firebase authentication con
 import { toast } from "@/hooks/use-toast"; // Custom toast hook for notifications
 import { useEffect } from "react"; // React hook for side effects
 import { doc, setDoc } from "firebase/firestore";
+import { GoogleAuthProvider } from "firebase/auth";
 
 // Interface for form inputs
 interface SignupFormInputs {
@@ -122,6 +123,11 @@ const SignupPage = () => {
         try {
             const result = await signInWithGoogle(); // Perform Google sign-in
             if (result) {
+                const credential = GoogleAuthProvider.credentialFromResult(result);
+                const accessToken = credential?.accessToken;
+                if (accessToken) {
+                    localStorage.setItem("googleAccessToken", accessToken);
+                }
                 const userId = result.user.uid; // Get the user's unique ID from Firebase Auth
                 const userEmail = result.user.email; // Get the user's email
 

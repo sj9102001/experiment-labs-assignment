@@ -19,6 +19,7 @@ interface Event {
     date: Date; // Date of the event
     color: string; // Color associated with the event
     description?: string; // Optional description of the event
+    calendarId: string
 }
 
 // Props interface for the EventModal component
@@ -46,6 +47,31 @@ export const EventModal: React.FC<EventModalProps> = ({
         if (!selectedEvent) return; // Ensure an event is selected
 
         try {
+            // Fetch the user's access token (ensure it's stored or passed appropriately)
+            const accessToken = localStorage.getItem("googleAccessToken");
+
+            if (!accessToken) {
+                console.error("Access token not found. Please authenticate again.");
+                return;
+            }
+
+            // Make a DELETE request to the API
+            const response = await fetch("/api/event", {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    accessToken,
+                    eventId: selectedEvent.calendarId, // Pass the Google Calendar event ID
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error("Failed to delete event:", errorData.message);
+                return;
+            }
             // Reference the Firestore document for the event
             const eventDocRef = doc(db, "users", user!.uid, "events", selectedEvent.id);
 

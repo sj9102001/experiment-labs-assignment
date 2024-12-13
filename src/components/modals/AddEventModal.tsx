@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState } from "react";
 import { Button } from "../ui/button";
 import {
@@ -13,13 +15,14 @@ import { collection, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "@/lib/firebase/config";
-
+import { google } from "googleapis"
 interface CalendarEvent {
     id: string;
     title: string;
     date: Date;
     color: string;
     description?: string;
+    calendarId: string
 }
 
 interface AddEventModalProps {
@@ -27,6 +30,7 @@ interface AddEventModalProps {
     setIsAddEventOpen: (change_to: boolean) => void;
     setEvents: React.Dispatch<React.SetStateAction<CalendarEvent[]>>;
 }
+
 
 const AddEventModal: React.FC<AddEventModalProps> = ({
     isAddEventOpen,
@@ -37,22 +41,51 @@ const AddEventModal: React.FC<AddEventModalProps> = ({
     const [user] = useAuthState(auth);
     const [loading, setLoading] = useState(false);
 
+    const addToGoogleCalender = async (accessToken: string, event: Partial<CalendarEvent>) => {
+        try {
+            const response = await fetch("/api/event", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ accessToken, event }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to add event to Google Calendar");
+            }
+
+            const data = await response.json();
+            console.log("Google Calendar Event Created:", data);
+            return data;
+        } catch (error) {
+            console.error(error);
+        }
+    };
     const handleAddEvent = async () => {
         if (!user || !newEvent.title || !newEvent.date) return;
 
-        const event = {
-            title: newEvent.title,
-            date: new Date(newEvent.date),
-            color: newEvent.color || "bg-blue-500",
-            description: newEvent.description || undefined,
-            isReminderSent: false
-        };
 
         try {
             setLoading(true);
-            const eventRef = await addDoc(collection(db, "users", user.uid, "events"), event);
+            const token = localStorage.getItem("googleAccessToken")!;
 
-            setEvents((prev) => [...prev, { id: eventRef.id, ...event }]);
+            const event = {
+                title: newEvent.title,
+                date: new Date(newEvent.date),
+                color: newEvent.color || "bg-blue-500",
+                description: newEvent.description || undefined,
+                isReminderSent: false,
+            };
+            const data = await addToGoogleCalender(token, event);
+            if (!data) {
+                throw new Error("Failed to retrieve event ID from Google Calendar");
+            }
+            const eventWithCalendarId = {
+                ...event,
+                calendarId: data.data.id, // Include the Google Calendar event ID
+            };
+            const eventRef = await addDoc(collection(db, "users", user.uid, "events"), eventWithCalendarId);
+
+            setEvents((prev) => [...prev, { id: eventRef.id, ...eventWithCalendarId }]);
 
             setIsAddEventOpen(false);
             setNewEvent({});
@@ -62,6 +95,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({
             setLoading(false);
         }
     };
+
 
     return (
         <Dialog open={isAddEventOpen} onOpenChange={setIsAddEventOpen}>

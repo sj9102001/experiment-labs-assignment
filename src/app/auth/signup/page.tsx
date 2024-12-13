@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input"; // UI input component
 import { Label } from "@/components/ui/label"; // UI label component
 
-import { useAuthState, useCreateUserWithEmailAndPassword } from "react-firebase-hooks/auth"; // Firebase hooks for authentication
+import { useAuthState, useCreateUserWithEmailAndPassword, useSignInWithGoogle } from "react-firebase-hooks/auth"; // Firebase hooks for authentication
 import { auth, db } from "@/lib/firebase/config"; // Firebase authentication configuration
 import { toast } from "@/hooks/use-toast"; // Custom toast hook for notifications
 import { useEffect } from "react"; // React hook for side effects
@@ -27,7 +27,6 @@ interface SignupFormInputs {
     password: string; // User's password
     confirmPassword: string; // Confirmation of user's password
 }
-
 // Main SignupPage component
 const SignupPage = () => {
     // React Hook Form setup for form state and validation
@@ -39,6 +38,7 @@ const SignupPage = () => {
 
     const router = useRouter(); // Next.js router for navigation
     const [createUserWithEmailAndPassword, user, loading, error] = useCreateUserWithEmailAndPassword(auth); // Firebase hook to create a user
+    const [signInWithGoogle, googleUser, googleLoading, googleError] = useSignInWithGoogle(auth); // Firebase hook for Google Sign-In
     const [currentUser] = useAuthState(auth); // Check if a user is already logged in
 
     // Redirect to the home page if the user is already logged in
@@ -50,15 +50,17 @@ const SignupPage = () => {
 
     // Display error messages using toast notifications
     useEffect(() => {
-        if (error) {
-            const errorMessage = getErrorMessage(error); // Generate error message based on Firebase error codes
+        if (error || googleError) {
+            const errorMessage = error
+                ? getErrorMessage(error)
+                : getErrorMessage(googleError);
             toast({
                 title: "Error",
                 description: errorMessage,
                 variant: "destructive", // Styling for error notifications
             });
         }
-    }, [error]);
+    }, [error, googleError]);
 
     // Prevent rendering the signup page if the user is already logged in
     if (currentUser) {
@@ -115,18 +117,26 @@ const SignupPage = () => {
         }
     };
 
+    // Google Sign-In handler
+    const handleGoogleSignIn = async () => {
+        try {
+            await signInWithGoogle(); // Perform Google sign-in
+        } catch (e: any) {
+            console.error("Google Sign-In Error:", e);
+        }
+    };
+
     return (
         <main className="flex h-screen w-full items-center bg-sidebar justify-center px-4">
             {/* Card layout for the signup form */}
             <Card className="mx-auto max-w-sm">
                 <CardHeader>
-                    <CardTitle className="text-2xl">Signup</CardTitle> {/* Signup title */}
+                    <CardTitle className="text-2xl">Signup</CardTitle>
                     <CardDescription>
                         Enter your email below to create a new account
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {/* Form for user signup */}
                     <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
                         {/* Email input */}
                         <div className="grid gap-2">
@@ -134,9 +144,13 @@ const SignupPage = () => {
                             <Input
                                 id="email"
                                 type="email"
-                                {...register("email", { required: "Email is required" })} // Validation rule
+                                {...register("email", { required: "Email is required" })}
                             />
-                            {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>} {/* Email error */}
+                            {errors.email && (
+                                <p className="text-red-500 text-sm">
+                                    {errors.email.message}
+                                </p>
+                            )}
                         </div>
                         {/* Password input */}
                         <div className="grid gap-2">
@@ -150,9 +164,13 @@ const SignupPage = () => {
                                         value: 6,
                                         message: "Password must be at least 6 characters.",
                                     },
-                                })} // Validation rules
+                                })}
                             />
-                            {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>} {/* Password error */}
+                            {errors.password && (
+                                <p className="text-red-500 text-sm">
+                                    {errors.password.message}
+                                </p>
+                            )}
                         </div>
                         {/* Confirm Password input */}
                         <div className="grid gap-2">
@@ -160,18 +178,32 @@ const SignupPage = () => {
                             <Input
                                 id="confirmPassword"
                                 type="password"
-                                {...register("confirmPassword", { required: "Confirm Password is required." })} // Validation rule
+                                {...register("confirmPassword", {
+                                    required: "Confirm Password is required.",
+                                })}
                             />
                             {errors.confirmPassword && (
-                                <p className="text-red-500 text-sm">{errors.confirmPassword.message}</p> // Confirm password error
+                                <p className="text-red-500 text-sm">
+                                    {errors.confirmPassword.message}
+                                </p>
                             )}
                         </div>
-                        {/* Signup button */}
-                        <Button type="submit" className="w-full bg-gradient-to-r from-purple-500 to-indigo-600" disabled={isSubmitting}>
-                            {isSubmitting ? "Signing up..." : "Signup"} {/* Button text changes during submission */}
+                        <Button
+                            type="submit"
+                            className="w-full bg-gradient-to-r from-purple-500 to-indigo-600"
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? "Signing up..." : "Signup"}
                         </Button>
                     </form>
-                    {/* Link to the login page */}
+                    {/* Google Sign-In button */}
+                    <Button
+                        onClick={handleGoogleSignIn}
+                        className="w-full mt-4 bg-gradient-to-r from-red-500 to-yellow-600"
+                        disabled={googleLoading}
+                    >
+                        {googleLoading ? "Signing in with Google..." : "Sign Up with Google"}
+                    </Button>
                     <div className="mt-4 text-center text-sm">
                         Already have an account?{" "}
                         <Link href="/auth/login" className="underline">

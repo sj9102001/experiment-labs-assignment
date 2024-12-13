@@ -17,8 +17,8 @@ import { Label } from "@/components/ui/label"; // UI label component
 import { toast } from "@/hooks/use-toast"; // Custom toast hook for notifications
 import { useRouter } from "next/navigation"; // Next.js hook for programmatic navigation
 
-import { useAuthState, useSignInWithEmailAndPassword } from "react-firebase-hooks/auth"; // Firebase hooks for managing authentication
-import { auth } from "@/lib/firebase/config"; // Firebase authentication configuration
+import { useAuthState, useSignInWithEmailAndPassword, useSignInWithGoogle } from "react-firebase-hooks/auth"; // Firebase hooks for managing authentication
+import { auth, googleAuthProvider } from "@/lib/firebase/config"; // Firebase authentication configuration and Google provider
 
 // Interface for the login form values
 interface LoginFormValues {
@@ -39,27 +39,30 @@ const LoginPage = () => {
 
     // Firebase authentication hooks
     const [signInWithEmailAndPassword, user, loading, error] = useSignInWithEmailAndPassword(auth);
+    const [signInWithPopup, googleUser, googleLoading, googleError] = useSignInWithGoogle(auth);
     const [initialUser] = useAuthState(auth); // Check if a user is already logged in
+
     // Display error messages using toast notifications
     useEffect(() => {
-        if (error) {
-            const errorMessage = getErrorMessage(error); // Generate error message based on Firebase error codes
+        if (error || googleError) {
+            const errorMessage = getErrorMessage(error || googleError); // Generate error message based on Firebase error codes
             toast({
                 title: "Error",
                 description: errorMessage,
                 variant: "destructive", // Styling for error notifications
             });
         }
-    }, [error]);
+    }, [error, googleError]);
+
     // Redirect to the home page if the user is already logged in
     useEffect(() => {
-        if (initialUser) {
+        if (initialUser || googleUser) {
             router.push("/"); // Navigate to the home page
         }
-    }, [initialUser, router]);
+    }, [initialUser, googleUser, router]);
 
     // Prevent rendering the login page while redirecting
-    if (initialUser) {
+    if (initialUser || googleUser) {
         return null;
     }
 
@@ -82,6 +85,15 @@ const LoginPage = () => {
     const onSubmit = async (data: LoginFormValues) => {
         try {
             await signInWithEmailAndPassword(data.email, data.password); // Attempt to log in the user
+        } catch (e) {
+            console.error(e); // Log any errors
+        }
+    };
+
+    // Google login handler
+    const handleGoogleLogin = async () => {
+        try {
+            await signInWithPopup(); // Sign in with Google using a popup
         } catch (e) {
             console.error(e); // Log any errors
         }
@@ -137,6 +149,15 @@ const LoginPage = () => {
                                 disabled={isSubmitting} // Disable the button while submitting
                             >
                                 {isSubmitting ? "Logging in..." : "Login"}
+                            </Button>
+
+                            {/* Google login button */}
+                            <Button
+                                onClick={handleGoogleLogin}
+                                className="w-full mt-2 bg-gradient-to-r from-red-500 to-yellow-600"
+                                disabled={googleLoading} // Disable the button while signing in with Google
+                            >
+                                {googleLoading ? "Signing in with Google..." : "Login with Google"}
                             </Button>
                         </div>
                     </form>

@@ -18,7 +18,8 @@ import { toast } from "@/hooks/use-toast"; // Custom toast hook for notification
 import { useRouter } from "next/navigation"; // Next.js hook for programmatic navigation
 
 import { useAuthState, useSignInWithEmailAndPassword, useSignInWithGoogle } from "react-firebase-hooks/auth"; // Firebase hooks for managing authentication
-import { auth, googleAuthProvider } from "@/lib/firebase/config"; // Firebase authentication configuration and Google provider
+import { auth, db, googleAuthProvider } from "@/lib/firebase/config"; // Firebase authentication configuration and Google provider
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 // Interface for the login form values
 interface LoginFormValues {
@@ -93,7 +94,28 @@ const LoginPage = () => {
     // Google login handler
     const handleGoogleLogin = async () => {
         try {
-            await signInWithPopup(); // Sign in with Google using a popup
+            const result = await signInWithPopup(); // Sign in with Google using a popup
+            if (result) {
+                const userId = result.user.uid; // Get the user's unique ID from Firebase Auth
+                const userEmail = result.user.email; // Get the user's email
+
+                // Check if the user already exists in the Firestore users collection
+                const userDoc = await getDoc(doc(db, "users", userId));
+
+                if (!userDoc.exists()) {
+                    // Add the user's email to the Firestore users collection if not already present
+                    await setDoc(doc(db, "users", userId), {
+                        email: userEmail, // Store the user's email
+                        createdAt: new Date(), // Optional: Add timestamp
+                    });
+                }
+
+                toast({
+                    title: "Success",
+                    description: "Logged in successfully with Google.",
+                    variant: "default", // Styling for success notifications
+                });
+            }
         } catch (e) {
             console.error(e); // Log any errors
         }

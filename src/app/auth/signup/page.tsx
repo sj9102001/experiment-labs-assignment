@@ -120,9 +120,32 @@ const SignupPage = () => {
     // Google Sign-In handler
     const handleGoogleSignIn = async () => {
         try {
-            await signInWithGoogle(); // Perform Google sign-in
+            const result = await signInWithGoogle(); // Perform Google sign-in
+            if (result) {
+                const userId = result.user.uid; // Get the user's unique ID from Firebase Auth
+                const userEmail = result.user.email; // Get the user's email
+
+                // Add the user's email to the Firestore users collection
+                await setDoc(doc(db, "users", userId), {
+                    email: userEmail, // Store the user's email
+                    createdAt: new Date(), // Optional: Add timestamp
+                });
+
+                toast({
+                    title: "Success",
+                    description: "Signed up successfully with Google. Redirecting...",
+                    variant: "default", // Styling for success notifications
+                });
+
+                router.push("/"); // Redirect to the homepage or another page
+            }
         } catch (e: any) {
             console.error("Google Sign-In Error:", e);
+            toast({
+                title: "Error",
+                description: "An error occurred during Google Sign-In. Please try again.",
+                variant: "destructive",
+            });
         }
     };
 
